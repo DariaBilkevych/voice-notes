@@ -53,4 +53,19 @@ class AudioModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
     fun resumePlaying(promise: Promise) {
         audioPlayer.resumePlaying(promise)
     }
+
+    @ReactMethod
+    fun getDuration(promise: Promise) {
+        audioPlayer.getDuration(promise)
+    }
+
+    @ReactMethod
+    fun getCurrentPosition(promise: Promise) {
+        audioPlayer.getCurrentPosition(promise)
+    }
+
+    @ReactMethod
+    fun seekTo(position: Int, promise: Promise) {
+        audioPlayer.seekTo(position, promise)
+    }
 }

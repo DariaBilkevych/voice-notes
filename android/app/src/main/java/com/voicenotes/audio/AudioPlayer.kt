@@ -70,4 +70,40 @@ class AudioPlayer(private val reactContext: ReactApplicationContext) :
             promise.reject("ERROR_RESUMING_FILE", "Failed to resume the audio file.", e)
         }
     }
+
+    @ReactMethod
+    fun getDuration(promise: Promise) {
+        try {
+            player?.let {
+                val duration = it.duration
+                promise.resolve(duration)
+            } ?: promise.reject("PLAYER_NOT_INITIALIZED", "Player has not been initialized.")
+        } catch (e: Exception) {
+            promise.reject("ERROR_GETTING_DURATION", "Failed to get audio duration.", e)
+        }
+    }
+
+    @ReactMethod
+    fun getCurrentPosition(promise: Promise) {
+        try {
+            player?.let {
+                val currentPosition = it.currentPosition
+                promise.resolve(currentPosition)
+            } ?: promise.reject("PLAYER_NOT_INITIALIZED", "Player has not been initialized.")
+        } catch (e: Exception) {
+            promise.reject("ERROR_GETTING_CURRENT_POSITION", "Failed to get current position.", e)
+        }
+    }
+
+    @ReactMethod
+    fun seekTo(position: Int, promise: Promise) {
+        try {
+            player?.let {
+                it.seekTo(position)
+                promise.resolve("Seeked to position: $position")
+            } ?: promise.reject("PLAYER_NOT_INITIALIZED", "Player has not been initialized.")
+        } catch (e: Exception) {
+            promise.reject("ERROR_SEEKING", "Failed to seek audio.", e)
+        }
+    }
 }

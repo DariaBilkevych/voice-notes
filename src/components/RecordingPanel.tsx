@@ -1,15 +1,35 @@
-import React, { useState } from 'react';
-import { TouchableOpacity, Text, Alert, PermissionsAndroid, View } from 'react-native';
-import { useDispatch } from 'react-redux';
-import { addRecording } from '../store/audioSlice';
-import { NativeModules } from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {
+  TouchableOpacity,
+  Text,
+  Alert,
+  PermissionsAndroid,
+  View,
+} from 'react-native';
+import {useDispatch} from 'react-redux';
+import {addRecording} from '../store/audioSlice';
+import {NativeModules} from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
-const { AudioModule } = NativeModules;
+const {AudioModule} = NativeModules;
 
 const RecordingPanel = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout | undefined;
+    if (isRecording && !isPaused) {
+      timer = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } else {
+      clearInterval(timer);
+    }
+    return () => clearInterval(timer);
+  }, [isRecording, isPaused]);
 
   const requestMicrophonePermission = async () => {
     try {
@@ -21,7 +41,7 @@ const RecordingPanel = () => {
           buttonNeutral: 'Ask Me Later',
           buttonNegative: 'Cancel',
           buttonPositive: 'OK',
-        }
+        },
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     } catch (err) {
@@ -33,14 +53,18 @@ const RecordingPanel = () => {
   const startRecording = async () => {
     const hasMicrophonePermission = await requestMicrophonePermission();
     if (!hasMicrophonePermission) {
-      Alert.alert('Permission Denied', 'Microphone permission is required to start recording.');
+      Alert.alert(
+        'Permission Denied',
+        'Microphone permission is required to start recording.',
+      );
       return;
     }
 
     try {
       await AudioModule.startRecording(`recording_${Date.now()}`);
       setIsRecording(true);
-      setIsPaused(false); // Reset pause state when starting a new recording
+      setIsPaused(false);
+      setRecordingTime(0);
     } catch (error) {
       console.warn('Error starting recording:', error);
     }
@@ -53,7 +77,8 @@ const RecordingPanel = () => {
 
       dispatch(addRecording(outputFile));
       setIsRecording(false);
-      setIsPaused(false); // Reset pause state when stopping the recording
+      setIsPaused(false);
+      setRecordingTime(0);
       Alert.alert('Success', result);
     } catch (error) {
       console.warn('Error stopping recording:', error);
@@ -78,39 +103,47 @@ const RecordingPanel = () => {
     }
   };
 
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  };
+
   return (
-    <View className="absolute bottom-0 w-full p-5 bg-white border-t border-gray-300">
-      <View className="flex-row justify-between w-full">
-        <TouchableOpacity
-          onPress={startRecording}
-          disabled={isRecording}
-          className="bg-blue-500 p-3 rounded"
-        >
-          <Text className="text-white font-semibold">Start</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          onPress={pauseRecording}
-          disabled={!isRecording || isPaused}
-          className="bg-yellow-500 p-3 rounded"
-        >
-          <Text className="text-white font-semibold">Pause</Text>
-        </TouchableOpacity>
+    <View className="w-full p-5 bg-white border-t border-gray-300 flex items-center">
+      <View className="flex-row items-center justify-between w-full">
+        <Text className="text-lg font-semibold text-gray-800">
+          {isRecording ? formatTime(recordingTime) : '0:00'}
+        </Text>
 
         <TouchableOpacity
-          onPress={resumeRecording}
-          disabled={!isRecording || !isPaused}
-          className="bg-green-500 p-3 rounded"
-        >
-          <Text className="text-white font-semibold">Resume</Text>
+          onPress={
+            !isRecording
+              ? startRecording
+              : isPaused
+              ? resumeRecording
+              : pauseRecording
+          }
+          className="bg-red-500 w-14 h-14 rounded-full flex items-center justify-center">
+          <Ionicons
+            name={!isRecording ? 'mic' : isPaused ? 'play' : 'pause'}
+            size={32}
+            color="white"
+          />
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={stopRecording}
           disabled={!isRecording}
-          className="bg-red-500 p-3 rounded"
-        >
-          <Text className="text-white font-semibold">Stop</Text>
+          className={`p-2 rounded-full border-2 ${
+            isRecording ? 'border-green-500' : 'border-gray-300'
+          }`}>
+          <Ionicons
+            name="checkmark"
+            size={18}
+            color={isRecording ? '#10B981' : '#D1D5DB'}
+          />
         </TouchableOpacity>
       </View>
     </View>
