@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   Alert,
   TouchableOpacity,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   TextInput,
 } from 'react-native';
+import Slider from '@react-native-community/slider';
 import {useSelector, useDispatch} from 'react-redux';
 import {NativeModules} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -21,12 +22,34 @@ const RecordingList = () => {
   const [newName, setNewName] = useState<string>('');
   const [playingFile, setPlayingFile] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [currentPosition, setCurrentPosition] = useState<number>(0);
+  const [duration, setDuration] = useState<number>(0);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (playingFile && !isPaused) {
+      // Оновлюємо позицію кожні 500 мс
+      interval = setInterval(async () => {
+        try {
+          const position = await AudioModule.getCurrentPosition();
+          setCurrentPosition(position);
+        } catch (error) {
+          console.warn('Error getting current position:', error);
+        }
+      }, 500);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [playingFile, isPaused]);
 
   const startPlaying = async (filePath: string) => {
     if (playingFile !== filePath) {
       setPlayingFile(filePath);
       setIsPaused(false);
       try {
+        const fileDuration = await AudioModule.getDuration();
+        setDuration(fileDuration);
         await AudioModule.startPlaying(filePath);
         setPlayingFile(null);
       } catch (error) {
@@ -50,6 +73,15 @@ const RecordingList = () => {
       setIsPaused(false);
     } catch (error) {
       console.warn('Error resuming playback:', error);
+    }
+  };
+
+  const seekTo = async (position: number) => {
+    try {
+      await AudioModule.seekTo(position);
+      setCurrentPosition(position);
+    } catch (error) {
+      console.warn('Error seeking position:', error);
     }
   };
 
@@ -169,6 +201,20 @@ const RecordingList = () => {
                   </TouchableOpacity>
                 </View>
               </View>
+              {playingFile === recording.filePath && (
+                <View className="mt-2">
+                  <Slider
+                    minimumValue={0}
+                    maximumValue={duration}
+                    value={currentPosition}
+                    onSlidingComplete={seekTo}
+                  />
+                  <Text className="text-gray-600 text-right mt-1">
+                    {Math.floor(currentPosition / 1000)}s /
+                    {Math.floor(duration / 1000)}s
+                  </Text>
+                </View>
+              )}
             </View>
           ),
         )
