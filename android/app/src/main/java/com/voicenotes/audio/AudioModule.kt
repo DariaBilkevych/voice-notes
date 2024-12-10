@@ -40,6 +40,11 @@ class AudioModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
     }
 
     @ReactMethod
+    fun getAmplitude(promise: Promise) {
+        audioRecorder.getAmplitude(promise)
+    }
+
+    @ReactMethod
     fun startPlaying(filePath: String, promise: Promise) {
         audioPlayer.startPlaying(filePath, promise)
     }

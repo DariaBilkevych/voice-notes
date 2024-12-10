@@ -17,6 +17,7 @@ const RecordingPanel = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [amplitudes, setAmplitudes] = useState<number[]>([]); // Масив для амплітуд
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -30,6 +31,34 @@ const RecordingPanel = () => {
     }
     return () => clearInterval(timer);
   }, [isRecording, isPaused]);
+
+  useEffect(() => {
+    let amplitudeInterval: NodeJS.Timeout | undefined;
+
+    if (isRecording && !isPaused) {
+      amplitudeInterval = setInterval(updateAmplitude, 100);
+    } else {
+      clearInterval(amplitudeInterval);
+    }
+
+    return () => clearInterval(amplitudeInterval);
+  }, [isRecording, isPaused]);
+
+  const updateAmplitude = async () => {
+    try {
+      const amplitude = await AudioModule.getAmplitude();
+      console.log('Amplitude:', amplitude);
+      setAmplitudes(prev => {
+        const updated = [...prev, amplitude];
+        if (updated.length > 50) {
+          updated.shift();
+        }
+        return updated;
+      });
+    } catch (error) {
+      console.warn('Error getting amplitude:', error);
+    }
+  };
 
   const requestMicrophonePermission = async () => {
     try {
@@ -65,6 +94,7 @@ const RecordingPanel = () => {
       setIsRecording(true);
       setIsPaused(false);
       setRecordingTime(0);
+      setAmplitudes([]);
     } catch (error) {
       console.warn('Error starting recording:', error);
     }
@@ -146,6 +176,32 @@ const RecordingPanel = () => {
           />
         </TouchableOpacity>
       </View>
+
+      {isRecording && (
+        <View className="w-full h-24 flex-row items-center justify-center mt-5 overflow-hidden">
+          {amplitudes.map((value, index) => {
+            const lineHeight = (value / 32767) * 50;
+            return (
+              <View
+                key={index}
+                className="w-[3px] h-24 mx-[1px] flex-column justify-center items-center">
+                <View
+                  style={{
+                    height: lineHeight,
+                  }}
+                  className="w-full bg-red-500"
+                />
+                <View
+                  style={{
+                    height: lineHeight,
+                  }}
+                  className="w-full bg-red-500"
+                />
+              </View>
+            );
+          })}
+        </View>
+      )}
     </View>
   );
 };

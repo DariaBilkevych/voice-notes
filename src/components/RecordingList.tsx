@@ -46,7 +46,9 @@ const RecordingList = () => {
       if (totalDurationInSeconds > 0) {
         const currentProgress =
           (currentPositionInSeconds / totalDurationInSeconds) * 100;
-        setProgress(currentProgress);
+        if (currentProgress !== progress) {
+          setProgress(currentProgress);
+        }
 
         if (currentProgress >= 100) {
           setProgress(0);
@@ -82,12 +84,12 @@ const RecordingList = () => {
 
   const startPlaying = async (filePath: string) => {
     if (playingFile !== filePath) {
+      setProgress(0);
       setPlayingFile(filePath);
       setIsPaused(false);
       try {
         await AudioModule.startPlaying(filePath);
         setPlayingFile(null);
-        setIsPaused(false);
       } catch (error) {
         console.warn('Error starting playback:', error);
       }
@@ -150,6 +152,18 @@ const RecordingList = () => {
       }
     } else {
       Alert.alert('Invalid Name', 'Name cannot be empty.');
+    }
+  };
+
+  const handleSliderChange = async (value: number) => {
+    if (playingFile) {
+      try {
+        const newPosition = (value / 100) * duration * 1000;
+        await AudioModule.seekTo(newPosition);
+        setProgress(value);
+      } catch (error) {
+        console.warn('Error seeking position:', error);
+      }
     }
   };
 
@@ -239,6 +253,7 @@ const RecordingList = () => {
                     minimumTrackTintColor="#3b82f6"
                     maximumTrackTintColor="#d1d5db"
                     thumbTintColor="#3b82f6"
+                    onSlidingComplete={handleSliderChange}
                   />
                   <View className="flex flex-row justify-between">
                     <Text className="text-gray-500">

@@ -2,11 +2,12 @@ package com.voicenotes.audio
 
 import android.media.MediaRecorder
 import android.os.Build
+import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
-import com.facebook.react.bridge.Promise
 import java.io.File
+
 
 class AudioRecorder(private val reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
@@ -103,6 +104,20 @@ class AudioRecorder(private val reactContext: ReactApplicationContext) :
             promise.resolve(outputFile)
         } else {
             promise.reject("NO_FILE", "No recording file available")
+        }
+    }
+
+    @ReactMethod
+    fun getAmplitude(promise: Promise) {
+        try {
+            if (recorder != null) {
+                val amplitude = recorder!!.maxAmplitude
+                promise.resolve(amplitude)
+            } else {
+                promise.reject("NO_RECORDER", "Recorder is not initialized")
+            }
+        } catch (e: java.lang.Exception) {
+            promise.reject("ERROR_GETTING_AMPLITUDE", "Failed to get amplitude", e)
         }
     }
 }
