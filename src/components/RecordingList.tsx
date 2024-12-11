@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   Alert,
   TouchableOpacity,
@@ -22,34 +22,42 @@ const RecordingList = () => {
   const [newName, setNewName] = useState<string>('');
   const [playingFile, setPlayingFile] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState<boolean>(false);
-  const [currentPosition, setCurrentPosition] = useState<number>(0);
-  const [duration, setDuration] = useState<number>(0);
+  const [durations, setDurations] = useState<{[key: string]: number}>({});
+  const [currentPositions, setCurrentPositions] = useState<{
+    [key: string]: number;
+  }>({});
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    if (playingFile && !isPaused) {
-      // Оновлюємо позицію кожні 500 мс
-      interval = setInterval(async () => {
-        try {
-          const position = await AudioModule.getCurrentPosition();
-          setCurrentPosition(position);
-        } catch (error) {
-          console.warn('Error getting current position:', error);
-        }
-      }, 500);
+    if (playingFile) {
+      AudioModule.getDuration()
+        .then((duration: number) =>
+          setDurations(prev => ({...prev, [playingFile]: duration})),
+        )
+        .catch((error: any) => console.warn('Error getting duration:', error));
+
+      intervalRef.current = setInterval(() => {
+        AudioModule.getCurrentPosition()
+          .then((position: number) =>
+            setCurrentPositions(prev => ({...prev, [playingFile]: position})),
+          )
+          .catch((error: any) =>
+            console.warn('Error getting current position:', error),
+          );
+      }, 1000);
+    } else {
+      clearInterval(intervalRef.current!);
     }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [playingFile, isPaused]);
+
+    return () => clearInterval(intervalRef.current!);
+  }, [playingFile]);
 
   const startPlaying = async (filePath: string) => {
     if (playingFile !== filePath) {
       setPlayingFile(filePath);
       setIsPaused(false);
+      setCurrentPositions(prev => ({...prev, [filePath]: 0}));
       try {
-        const fileDuration = await AudioModule.getDuration();
-        setDuration(fileDuration);
         await AudioModule.startPlaying(filePath);
         setPlayingFile(null);
       } catch (error) {
@@ -76,12 +84,12 @@ const RecordingList = () => {
     }
   };
 
-  const seekTo = async (position: number) => {
+  const seekTo = async (filePath: string, value: number) => {
     try {
-      await AudioModule.seekTo(position);
-      setCurrentPosition(position);
+      await AudioModule.seekTo(value);
+      setCurrentPositions(prev => ({...prev, [filePath]: value}));
     } catch (error) {
-      console.warn('Error seeking position:', error);
+      console.warn('Error seeking:', error);
     }
   };
 
@@ -124,6 +132,12 @@ const RecordingList = () => {
     } else {
       Alert.alert('Invalid Name', 'Name cannot be empty.');
     }
+  };
+
+  const formatTime = (milliseconds: number) => {
+    const minutes = Math.floor(milliseconds / 60000);
+    const seconds = ((milliseconds % 60000) / 1000).toFixed(0);
+    return minutes + ':' + (parseInt(seconds) < 10 ? '0' : '') + seconds;
   };
 
   const reversedRecordings = [...recordings].reverse();
@@ -202,17 +216,20 @@ const RecordingList = () => {
                 </View>
               </View>
               {playingFile === recording.filePath && (
-                <View className="mt-2">
-                  <Slider
-                    minimumValue={0}
-                    maximumValue={duration}
-                    value={currentPosition}
-                    onSlidingComplete={seekTo}
-                  />
-                  <Text className="text-gray-600 text-right mt-1">
-                    {Math.floor(currentPosition / 1000)}s /
-                    {Math.floor(duration / 1000)}s
+                <View className="flex flex-row items-center">
+                  <Text>
+                    {formatTime(currentPositions[recording.filePath] || 0)}
                   </Text>
+                  <Slider
+                    style={{flex: 1}}
+                    minimumValue={0}
+                    maximumValue={durations[recording.filePath] || 0}
+                    value={currentPositions[recording.filePath] || 0}
+                    onSlidingComplete={value =>
+                      seekTo(recording.filePath, value)
+                    }
+                  />
+                  <Text>{formatTime(durations[recording.filePath] || 0)}</Text>
                 </View>
               )}
             </View>
