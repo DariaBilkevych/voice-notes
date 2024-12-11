@@ -1,0 +1,2 @@
+export const SECONDS_IN_MILLISECOND = 1000;
+export const PERCENTAGE_MULTIPLIER = 100;

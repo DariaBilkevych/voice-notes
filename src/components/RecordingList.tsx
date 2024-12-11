@@ -11,15 +11,8 @@ import {useSelector, useDispatch} from 'react-redux';
 import {NativeModules} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {removeRecording, updateRecordingName} from '../store/audioSlice';
-import Slider from '@react-native-community/slider';
 
 const {AudioModule} = NativeModules;
-
-const formatTime = (seconds: number) => {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-};
 
 const RecordingList = () => {
   const dispatch = useDispatch();
@@ -28,68 +21,13 @@ const RecordingList = () => {
   const [newName, setNewName] = useState<string>('');
   const [playingFile, setPlayingFile] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState<boolean>(false);
-  const [progress, setProgress] = useState<number>(0);
-  const [duration, setDuration] = useState<number>(0);
-
-  const updateProgress = async () => {
-    if (!playingFile) return;
-
-    try {
-      const currentPosition = await AudioModule.getCurrentPosition();
-      const totalDuration = await AudioModule.getDuration();
-
-      const currentPositionInSeconds = currentPosition / 1000;
-      const totalDurationInSeconds = totalDuration / 1000;
-
-      setDuration(totalDurationInSeconds);
-
-      if (totalDurationInSeconds > 0) {
-        const currentProgress =
-          (currentPositionInSeconds / totalDurationInSeconds) * 100;
-        if (currentProgress !== progress) {
-          setProgress(currentProgress);
-        }
-
-        if (currentProgress >= 100) {
-          setProgress(0);
-          setIsPaused(true);
-          setPlayingFile(null);
-        }
-      }
-    } catch (error) {
-      console.warn('Error getting current position:', error);
-    }
-  };
-
-  useEffect(() => {
-    let animationFrameId: number | null = null;
-
-    const animateProgress = () => {
-      if (playingFile) {
-        updateProgress();
-        animationFrameId = requestAnimationFrame(animateProgress);
-      }
-    };
-
-    if (playingFile) {
-      animateProgress();
-    } else {
-      setProgress(0);
-    }
-
-    return () => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-    };
-  }, [playingFile]);
 
   const startPlaying = async (filePath: string) => {
     if (playingFile !== filePath) {
-      setProgress(0);
       setPlayingFile(filePath);
       setIsPaused(false);
       try {
         await AudioModule.startPlaying(filePath);
-        setPlayingFile(null);
       } catch (error) {
         console.warn('Error starting playback:', error);
       }
@@ -155,23 +93,10 @@ const RecordingList = () => {
     }
   };
 
-  const handleSliderChange = async (value: number) => {
-    if (playingFile) {
-      try {
-        const newPosition = (value / 100) * duration * 1000;
-        await AudioModule.seekTo(newPosition);
-        setProgress(value);
-      } catch (error) {
-        console.warn('Error seeking position:', error);
-      }
-    }
-  };
-
   const reversedRecordings = [...recordings].reverse();
 
   return (
     <View className="flex-1">
-      {/* Fixed Header */}
       <View className="py-3 px-4 z-10">
         <Text className="text-2xl font-bold text-left">All Notes</Text>
         <View className="flex-row items-center rounded-lg shadow-lg mt-2 px-4 border-b border-gray-300">
@@ -188,7 +113,6 @@ const RecordingList = () => {
         </View>
       </View>
 
-      {/* Scrollable Content */}
       <ScrollView className="flex-1 px-4">
         {reversedRecordings.length > 0 ? (
           reversedRecordings.map(
@@ -256,29 +180,6 @@ const RecordingList = () => {
                     </TouchableOpacity>
                   </View>
                 </View>
-                {(playingFile === recording.filePath ||
-                  editingFile === recording.filePath) && (
-                  <>
-                    <Slider
-                      style={{marginTop: 10}}
-                      minimumValue={0}
-                      maximumValue={100}
-                      value={progress}
-                      minimumTrackTintColor="#3b82f6"
-                      maximumTrackTintColor="#d1d5db"
-                      thumbTintColor="#3b82f6"
-                      onSlidingComplete={handleSliderChange}
-                    />
-                    <View className="flex flex-row justify-between">
-                      <Text className="text-gray-500">
-                        {formatTime((progress / 100) * duration)}
-                      </Text>
-                      <Text className="text-gray-500">
-                        {formatTime(duration)}
-                      </Text>
-                    </View>
-                  </>
-                )}
               </View>
             ),
           )
