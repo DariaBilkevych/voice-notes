@@ -1,2 +1,2 @@
-export const SECONDS_IN_MILLISECOND = 1000;
-export const PERCENTAGE_MULTIPLIER = 100;
+export const SECONDS_IN_A_MINUTE = 60;
+export const SECONDS_THRESHOLD = 10;
