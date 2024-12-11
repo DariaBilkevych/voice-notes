@@ -5,11 +5,13 @@ import {
   Alert,
   PermissionsAndroid,
   View,
+  NativeModules,
 } from 'react-native';
 import {useDispatch} from 'react-redux';
 import {addRecording} from '../store/audioSlice';
-import {NativeModules} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import SaveRecordingModal from './modals/SaveRecordingModal';
+import {formatTime} from '../utils/timeUtils';
 
 const {AudioModule} = NativeModules;
 
@@ -17,7 +19,10 @@ const RecordingPanel = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [amplitudes, setAmplitudes] = useState<number[]>([]); // Масив для амплітуд
+  const [amplitudes, setAmplitudes] = useState<number[]>([]);
+  const [outputFile, setOutputFile] = useState<string | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -47,7 +52,6 @@ const RecordingPanel = () => {
   const updateAmplitude = async () => {
     try {
       const amplitude = await AudioModule.getAmplitude();
-      console.log('Amplitude:', amplitude);
       setAmplitudes(prev => {
         const updated = [...prev, amplitude];
         if (updated.length > 50) {
@@ -102,14 +106,13 @@ const RecordingPanel = () => {
 
   const stopRecording = async () => {
     try {
-      const result = await AudioModule.stopRecording();
-      const outputFile = await AudioModule.getOutputFile();
-
-      dispatch(addRecording(outputFile));
+      await AudioModule.stopRecording();
+      const outputFilePath = await AudioModule.getOutputFile();
+      setOutputFile(outputFilePath);
       setIsRecording(false);
       setIsPaused(false);
       setRecordingTime(0);
-      Alert.alert('Success', result);
+      setIsModalVisible(true);
     } catch (error) {
       console.warn('Error stopping recording:', error);
     }
@@ -133,11 +136,17 @@ const RecordingPanel = () => {
     }
   };
 
-  const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = time % 60;
+  const handleSave = (name: string) => {
+    if (outputFile) {
+      dispatch(addRecording({filePath: outputFile, name}));
+      setIsModalVisible(false);
+      setOutputFile(null);
+    }
+  };
 
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  const handleCancel = () => {
+    setIsModalVisible(false);
+    setOutputFile(null);
   };
 
   return (
@@ -202,6 +211,12 @@ const RecordingPanel = () => {
           })}
         </View>
       )}
+
+      <SaveRecordingModal
+        visible={isModalVisible}
+        onSave={handleSave}
+        onCancel={handleCancel}
+      />
     </View>
   );
 };

@@ -170,110 +170,123 @@ const RecordingList = () => {
   const reversedRecordings = [...recordings].reverse();
 
   return (
-    <ScrollView className="flex-1 p-4 bg-gray-100">
-      <Text className="text-2xl font-bold text-left mb-4">All Notes</Text>
-      <View className="flex-row items-center rounded-lg shadow-lg mb-4 px-4 border-b border-gray-300">
-        <Ionicons
-          name="search"
-          size={20}
-          color="#6B7280"
-          style={{marginRight: 8}}
-        />
-        <TextInput
-          className="flex-1 py-2 px-2 text-purple-800"
-          placeholder="Type to search ..."
-        />
+    <View className="flex-1">
+      {/* Fixed Header */}
+      <View className="py-3 px-4 z-10">
+        <Text className="text-2xl font-bold text-left">All Notes</Text>
+        <View className="flex-row items-center rounded-lg shadow-lg mt-2 px-4 border-b border-gray-300">
+          <Ionicons
+            name="search"
+            size={20}
+            color="#6B7280"
+            style={{marginRight: 8}}
+          />
+          <TextInput
+            className="flex-1 py-2 px-2"
+            placeholder="Type to search ..."
+          />
+        </View>
       </View>
-      {reversedRecordings.length > 0 ? (
-        reversedRecordings.map(
-          (recording: {filePath: string; name: string}, index: number) => (
-            <View
-              key={index}
-              className="flex flex-col p-4 mb-2 bg-white rounded-md shadow-md">
-              <View className="flex flex-row items-center justify-between">
-                {editingFile === recording.filePath ? (
-                  <TextInput
-                    value={newName}
-                    onChangeText={setNewName}
-                    placeholder="Enter new name"
-                    className="flex-1 mr-4 border-b border-gray-300"
-                    onSubmitEditing={() => saveNewName(recording.filePath)}
-                  />
-                ) : (
-                  <Text className="text-gray-800 font-medium flex-1">
-                    {recording.name}
-                  </Text>
-                )}
-                <View className="flex flex-row space-x-2">
-                  {playingFile === recording.filePath ? (
-                    isPaused ? (
-                      <TouchableOpacity onPress={resumePlaying}>
+
+      {/* Scrollable Content */}
+      <ScrollView className="flex-1 px-4">
+        {reversedRecordings.length > 0 ? (
+          reversedRecordings.map(
+            (recording: {filePath: string; name: string}, index: number) => (
+              <View
+                key={index}
+                className="flex flex-col p-4 mb-2 bg-white rounded-md shadow-md">
+                <View className="flex flex-row items-center justify-between">
+                  {editingFile === recording.filePath ? (
+                    <TextInput
+                      value={newName}
+                      onChangeText={setNewName}
+                      placeholder="Enter new name"
+                      className="flex-1 mr-4 border-b border-gray-300"
+                      onSubmitEditing={() => saveNewName(recording.filePath)}
+                    />
+                  ) : (
+                    <Text className="text-gray-800 font-medium flex-1">
+                      {recording.name}
+                    </Text>
+                  )}
+                  <View className="flex flex-row space-x-2">
+                    {playingFile === recording.filePath ? (
+                      isPaused ? (
+                        <TouchableOpacity onPress={resumePlaying}>
+                          <Ionicons
+                            name="play-circle"
+                            size={32}
+                            color="#3b82f6"
+                          />
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity onPress={pausePlaying}>
+                          <Ionicons
+                            name="pause-circle"
+                            size={32}
+                            color="#3b82f6"
+                          />
+                        </TouchableOpacity>
+                      )
+                    ) : (
+                      <TouchableOpacity
+                        onPress={() => startPlaying(recording.filePath)}>
                         <Ionicons
                           name="play-circle"
                           size={32}
                           color="#3b82f6"
                         />
                       </TouchableOpacity>
-                    ) : (
-                      <TouchableOpacity onPress={pausePlaying}>
-                        <Ionicons
-                          name="pause-circle"
-                          size={32}
-                          color="#3b82f6"
-                        />
-                      </TouchableOpacity>
-                    )
-                  ) : (
+                    )}
                     <TouchableOpacity
-                      onPress={() => startPlaying(recording.filePath)}>
-                      <Ionicons name="play-circle" size={32} color="#3b82f6" />
+                      onPress={() => {
+                        setEditingFile(recording.filePath);
+                        setNewName(recording.name);
+                      }}>
+                      <Ionicons
+                        name="create-outline"
+                        size={28}
+                        color="#10b981"
+                      />
                     </TouchableOpacity>
-                  )}
-                  <TouchableOpacity
-                    onPress={() => {
-                      setEditingFile(recording.filePath);
-                      setNewName(recording.name);
-                    }}>
-                    <Ionicons name="create-outline" size={28} color="#10b981" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => deleteRecording(recording.filePath)}>
-                    <Ionicons name="trash" size={28} color="#ef4444" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-              {(playingFile === recording.filePath ||
-                editingFile === recording.filePath) && (
-                <>
-                  <Slider
-                    style={{marginTop: 10}}
-                    minimumValue={0}
-                    maximumValue={100}
-                    value={progress}
-                    minimumTrackTintColor="#3b82f6"
-                    maximumTrackTintColor="#d1d5db"
-                    thumbTintColor="#3b82f6"
-                    onSlidingComplete={handleSliderChange}
-                  />
-                  <View className="flex flex-row justify-between">
-                    <Text className="text-gray-500">
-                      {formatTime((progress / 100) * duration)}
-                    </Text>
-                    <Text className="text-gray-500">
-                      {formatTime(duration)}
-                    </Text>
+                    <TouchableOpacity
+                      onPress={() => deleteRecording(recording.filePath)}>
+                      <Ionicons name="trash" size={28} color="#ef4444" />
+                    </TouchableOpacity>
                   </View>
-                </>
-              )}
-            </View>
-          ),
-        )
-      ) : (
-        <Text className="text-center text-gray-500">
-          No recordings available.
-        </Text>
-      )}
-    </ScrollView>
+                </View>
+                {(playingFile === recording.filePath ||
+                  editingFile === recording.filePath) && (
+                  <>
+                    <Slider
+                      style={{marginTop: 10}}
+                      minimumValue={0}
+                      maximumValue={100}
+                      value={progress}
+                      minimumTrackTintColor="#3b82f6"
+                      maximumTrackTintColor="#d1d5db"
+                      thumbTintColor="#3b82f6"
+                      onSlidingComplete={handleSliderChange}
+                    />
+                    <View className="flex flex-row justify-between">
+                      <Text className="text-gray-500">
+                        {formatTime((progress / 100) * duration)}
+                      </Text>
+                      <Text className="text-gray-500">
+                        {formatTime(duration)}
+                      </Text>
+                    </View>
+                  </>
+                )}
+              </View>
+            ),
+          )
+        ) : (
+          <Text className="text-center text-gray-500">No recordings found</Text>
+        )}
+      </ScrollView>
+    </View>
   );
 };
 

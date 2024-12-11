@@ -17,18 +17,14 @@ const audioSlice = createSlice({
   name: 'audio',
   initialState,
   reducers: {
-    addRecording: (state, action: PayloadAction<string>) => {
-      let nextRecordingNumber = 1;
-      const existingNames = state.recordings.map(recording => recording.name);
-      while (existingNames.includes(`New Recording ${nextRecordingNumber}`)) {
-        nextRecordingNumber++;
-      }
-
+    addRecording: (
+      state,
+      action: PayloadAction<{filePath: string; name: string}>,
+    ) => {
       const newRecording = {
-        filePath: action.payload,
-        name: `New Recording ${nextRecordingNumber}`,
+        filePath: action.payload.filePath,
+        name: action.payload.name,
       };
-
       state.recordings.push(newRecording);
     },
 
