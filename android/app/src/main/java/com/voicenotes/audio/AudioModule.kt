@@ -60,6 +60,11 @@ class AudioModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
     }
 
     @ReactMethod
+    fun isPlaying(promise: Promise){
+        audioPlayer.isPlaying(promise)
+    }
+
+    @ReactMethod
     fun getDuration(promise: Promise) {
         audioPlayer.getDuration(promise)
     }

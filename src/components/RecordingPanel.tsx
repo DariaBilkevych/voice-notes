@@ -12,6 +12,7 @@ import {addRecording} from '../store/audioSlice';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import SaveRecordingModal from './modals/SaveRecordingModal';
 import {formatTime} from '../utils/timeUtils';
+import {AMPLITUDE_SCALE_FACTOR, MAX_AMPLITUDE} from '../utils/constants';
 
 const {AudioModule} = NativeModules;
 
@@ -54,7 +55,7 @@ const RecordingPanel = () => {
       const amplitude = await AudioModule.getAmplitude();
       setAmplitudes(prev => {
         const updated = [...prev, amplitude];
-        if (updated.length > 50) {
+        if (updated.length > AMPLITUDE_SCALE_FACTOR) {
           updated.shift();
         }
         return updated;
@@ -189,7 +190,7 @@ const RecordingPanel = () => {
       {isRecording && (
         <View className="w-full h-24 flex-row items-center justify-center mt-5 overflow-hidden">
           {amplitudes.map((value, index) => {
-            const lineHeight = (value / 32767) * 50;
+            const lineHeight = (value / MAX_AMPLITUDE) * AMPLITUDE_SCALE_FACTOR;
             return (
               <View
                 key={index}

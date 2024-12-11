@@ -25,7 +25,6 @@ const RecordingList = () => {
   const startPlaying = async (filePath: string) => {
     if (playingFile !== filePath) {
       setPlayingFile(filePath);
-      setIsPaused(false);
       try {
         await AudioModule.startPlaying(filePath);
       } catch (error) {
