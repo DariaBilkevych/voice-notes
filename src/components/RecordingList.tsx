@@ -15,7 +15,7 @@ import {
   updateRecordingName,
   setCurrentlyPlaying,
 } from '../store/audioSlice';
-import {validateRecordingName} from '../validators/validateRecordingName';
+import {validateEditingName} from '../validators/validateEditingName';
 
 const {AudioModule} = NativeModules;
 
@@ -85,7 +85,16 @@ const RecordingList = () => {
   };
 
   const saveNewName = (filePath: string) => {
-    const errors = validateRecordingName(
+    if (
+      newName.trim() ===
+      recordings.find((r: {filePath: string}) => r.filePath === filePath)?.name
+    ) {
+      setEditingFile(null);
+      setNewName('');
+      return;
+    }
+
+    const errors = validateEditingName(
       newName,
       recordings.map((r: any) => r.name),
     );

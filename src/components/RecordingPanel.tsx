@@ -107,7 +107,6 @@ const RecordingPanel = () => {
     try {
       await AudioModule.startRecording(`recording_${Date.now()}`);
       dispatch(setIsRecording(true));
-      // setIsRecording(true);
       setIsPaused(false);
       setRecordingTime(0);
       setAmplitudes([]);
@@ -122,7 +121,6 @@ const RecordingPanel = () => {
       const outputFilePath = await AudioModule.getOutputFile();
       setOutputFile(outputFilePath);
       dispatch(setIsRecording(false));
-      // setIsRecording(false);
       setIsPaused(false);
       setRecordingTime(0);
       setIsModalVisible(true);
