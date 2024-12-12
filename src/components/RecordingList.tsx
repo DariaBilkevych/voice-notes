@@ -15,6 +15,7 @@ import {
   updateRecordingName,
   setCurrentlyPlaying,
 } from '../store/audioSlice';
+import {validateRecordingName} from '../validators/validateRecordingName';
 
 const {AudioModule} = NativeModules;
 
@@ -83,14 +84,13 @@ const RecordingList = () => {
 
   const saveNewName = (filePath: string) => {
     if (newName.trim()) {
-      const isNameTaken = recordings.some(
-        (recording: {name: string; filePath: string}) =>
-          recording.name.toLowerCase() === newName.trim().toLowerCase() &&
-          recording.filePath !== filePath,
+      const errors = validateRecordingName(
+        newName,
+        recordings.map((r: any) => r.name),
       );
 
-      if (isNameTaken) {
-        Alert.alert('Duplicate Name', 'This name is already taken.');
+      if (errors.length > 0) {
+        Alert.alert('Validation Error', errors.join('\n'));
       } else {
         dispatch(updateRecordingName({filePath, newName: newName.trim()}));
         setEditingFile(null);
@@ -123,23 +123,38 @@ const RecordingList = () => {
       <ScrollView className="flex-1 p-4 bg-gray-100">
         {reversedRecordings.length > 0 ? (
           reversedRecordings.map(
-            (recording: {filePath: string; name: string}, index: number) => (
+            (
+              recording: {filePath: string; name: string; createdAt: string},
+              index: number,
+            ) => (
               <View
                 key={index}
                 className="flex flex-row items-center justify-between p-4 mb-2 bg-white rounded-md shadow-md">
-                {editingFile === recording.filePath ? (
-                  <TextInput
-                    value={newName}
-                    onChangeText={setNewName}
-                    placeholder="Enter new name"
-                    className="flex-1 mr-4 border-b border-gray-300"
-                    onSubmitEditing={() => saveNewName(recording.filePath)}
-                  />
-                ) : (
-                  <Text className="text-gray-800 font-medium">
-                    {recording.name}
+                <View>
+                  {editingFile === recording.filePath ? (
+                    <TextInput
+                      value={newName}
+                      onChangeText={setNewName}
+                      placeholder="Enter new name"
+                      className="w-48 h-12 mr-4 border-b border-gray-300"
+                      onSubmitEditing={() => saveNewName(recording.filePath)}
+                      autoFocus={true}
+                    />
+                  ) : (
+                    <Text className="text-gray-800 font-medium">
+                      {recording.name.length > 20
+                        ? recording.name.slice(0, 20) + '...'
+                        : recording.name}
+                    </Text>
+                  )}
+                  <Text className="text-gray-400 text-xs mt-1">
+                    {new Intl.DateTimeFormat('en-GB', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    }).format(new Date(recording.createdAt))}
                   </Text>
-                )}
+                </View>
                 <View className="flex flex-row space-x-4">
                   {playingFile === recording.filePath ? (
                     isPaused ? (
@@ -181,8 +196,8 @@ const RecordingList = () => {
             ),
           )
         ) : (
-          <Text className="text-center text-gray-500">
-            No recordings available.
+          <Text className="text-gray-500 text-center">
+            No recordings found.
           </Text>
         )}
       </ScrollView>

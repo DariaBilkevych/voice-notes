@@ -3,6 +3,7 @@ import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 interface Recording {
   filePath: string;
   name: string;
+  createdAt: string;
 }
 
 interface AudioState {
@@ -21,11 +22,16 @@ const audioSlice = createSlice({
   reducers: {
     addRecording: (
       state,
-      action: PayloadAction<{filePath: string; name: string}>,
+      action: PayloadAction<{
+        filePath: string;
+        name: string;
+        createdAt: string;
+      }>,
     ) => {
       const newRecording = {
         filePath: action.payload.filePath,
         name: action.payload.name,
+        createdAt: action.payload.createdAt,
       };
       state.recordings.push(newRecording);
     },

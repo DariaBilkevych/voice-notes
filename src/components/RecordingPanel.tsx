@@ -147,7 +147,8 @@ const RecordingPanel = () => {
 
   const handleSave = (name: string) => {
     if (outputFile) {
-      dispatch(addRecording({filePath: outputFile, name}));
+      const createdAt = new Date().toISOString();
+      dispatch(addRecording({filePath: outputFile, name, createdAt}));
       setIsModalVisible(false);
       setOutputFile(null);
     }

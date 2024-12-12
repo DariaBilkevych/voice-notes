@@ -2,7 +2,7 @@ import React, {useState, useEffect} from 'react';
 import {Modal, View, Text, TextInput, TouchableOpacity} from 'react-native';
 import {useSelector} from 'react-redux';
 import {generateInitialName} from '../../utils/nameUtils';
-import {validateRecordingName} from '../../validators/validateRecprdingName';
+import {validateRecordingName} from '../../validators/validateRecordingName';
 
 const SaveRecordingModal = ({
   visible,
