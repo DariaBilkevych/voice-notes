@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import {
   Alert,
   TouchableOpacity,
@@ -25,8 +25,11 @@ const RecordingList = () => {
   const startPlaying = async (filePath: string) => {
     if (playingFile !== filePath) {
       setPlayingFile(filePath);
+      setIsPaused(false);
       try {
         await AudioModule.startPlaying(filePath);
+        setPlayingFile(null);
+        setIsPaused(false);
       } catch (error) {
         console.warn('Error starting playback:', error);
       }
@@ -111,79 +114,70 @@ const RecordingList = () => {
           />
         </View>
       </View>
-
-      <ScrollView className="flex-1 px-4">
+      <ScrollView className="flex-1 p-4 bg-gray-100">
         {reversedRecordings.length > 0 ? (
           reversedRecordings.map(
             (recording: {filePath: string; name: string}, index: number) => (
               <View
                 key={index}
-                className="flex flex-col p-4 mb-2 bg-white rounded-md shadow-md">
-                <View className="flex flex-row items-center justify-between">
-                  {editingFile === recording.filePath ? (
-                    <TextInput
-                      value={newName}
-                      onChangeText={setNewName}
-                      placeholder="Enter new name"
-                      className="flex-1 mr-4 border-b border-gray-300"
-                      onSubmitEditing={() => saveNewName(recording.filePath)}
-                    />
-                  ) : (
-                    <Text className="text-gray-800 font-medium flex-1">
-                      {recording.name}
-                    </Text>
-                  )}
-                  <View className="flex flex-row space-x-2">
-                    {playingFile === recording.filePath ? (
-                      isPaused ? (
-                        <TouchableOpacity onPress={resumePlaying}>
-                          <Ionicons
-                            name="play-circle"
-                            size={32}
-                            color="#3b82f6"
-                          />
-                        </TouchableOpacity>
-                      ) : (
-                        <TouchableOpacity onPress={pausePlaying}>
-                          <Ionicons
-                            name="pause-circle"
-                            size={32}
-                            color="#3b82f6"
-                          />
-                        </TouchableOpacity>
-                      )
-                    ) : (
-                      <TouchableOpacity
-                        onPress={() => startPlaying(recording.filePath)}>
+                className="flex flex-row items-center justify-between p-4 mb-2 bg-white rounded-md shadow-md">
+                {editingFile === recording.filePath ? (
+                  <TextInput
+                    value={newName}
+                    onChangeText={setNewName}
+                    placeholder="Enter new name"
+                    className="flex-1 mr-4 border-b border-gray-300"
+                    onSubmitEditing={() => saveNewName(recording.filePath)}
+                  />
+                ) : (
+                  <Text className="text-gray-800 font-medium">
+                    {recording.name}
+                  </Text>
+                )}
+                <View className="flex flex-row space-x-4">
+                  {playingFile === recording.filePath ? (
+                    isPaused ? (
+                      <TouchableOpacity onPress={resumePlaying}>
                         <Ionicons
                           name="play-circle"
                           size={32}
                           color="#3b82f6"
                         />
                       </TouchableOpacity>
-                    )}
+                    ) : (
+                      <TouchableOpacity onPress={pausePlaying}>
+                        <Ionicons
+                          name="pause-circle"
+                          size={32}
+                          color="#3b82f6"
+                        />
+                      </TouchableOpacity>
+                    )
+                  ) : (
                     <TouchableOpacity
-                      onPress={() => {
-                        setEditingFile(recording.filePath);
-                        setNewName(recording.name);
-                      }}>
-                      <Ionicons
-                        name="create-outline"
-                        size={28}
-                        color="#10b981"
-                      />
+                      onPress={() => startPlaying(recording.filePath)}>
+                      <Ionicons name="play-circle" size={32} color="#3b82f6" />
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => deleteRecording(recording.filePath)}>
-                      <Ionicons name="trash" size={28} color="#ef4444" />
-                    </TouchableOpacity>
-                  </View>
+                  )}
+                  <TouchableOpacity
+                    onPress={() => {
+                      setEditingFile(recording.filePath);
+                      setNewName(recording.name);
+                    }}>
+                    <Ionicons name="create-outline" size={28} color="#10b981" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => deleteRecording(recording.filePath)}>
+                    <Ionicons name="trash" size={28} color="#ef4444" />
+                  </TouchableOpacity>
                 </View>
               </View>
             ),
           )
         ) : (
-          <Text className="text-center text-gray-500">No recordings found</Text>
+          <Text className="text-center text-gray-500">
+            No recordings available.
+          </Text>
         )}
       </ScrollView>
     </View>
