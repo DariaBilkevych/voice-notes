@@ -18,7 +18,6 @@ import {setIsRecording} from '../store/audioSlice';
 const {AudioModule} = NativeModules;
 
 const RecordingPanel = () => {
-  // const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [amplitudes, setAmplitudes] = useState<number[]>([]);
