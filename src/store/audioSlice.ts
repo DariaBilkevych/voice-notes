@@ -7,10 +7,12 @@ interface Recording {
 
 interface AudioState {
   recordings: Recording[];
+  currentlyPlayingFile: string | null;
 }
 
 const initialState: AudioState = {
   recordings: [],
+  currentlyPlayingFile: null,
 };
 
 const audioSlice = createSlice({
@@ -45,9 +47,17 @@ const audioSlice = createSlice({
         recording.name = action.payload.newName;
       }
     },
+
+    setCurrentlyPlaying: (state, action: PayloadAction<string | null>) => {
+      state.currentlyPlayingFile = action.payload;
+    },
   },
 });
 
-export const {addRecording, removeRecording, updateRecordingName} =
-  audioSlice.actions;
+export const {
+  addRecording,
+  removeRecording,
+  updateRecordingName,
+  setCurrentlyPlaying,
+} = audioSlice.actions;
 export default audioSlice.reducer;

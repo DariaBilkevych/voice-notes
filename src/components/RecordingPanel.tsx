@@ -7,8 +7,8 @@ import {
   View,
   NativeModules,
 } from 'react-native';
-import {useDispatch} from 'react-redux';
-import {addRecording} from '../store/audioSlice';
+import {useDispatch, useSelector} from 'react-redux';
+import {addRecording, setCurrentlyPlaying} from '../store/audioSlice';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import SaveRecordingModal from './modals/SaveRecordingModal';
 import {formatTime} from '../utils/timeUtils';
@@ -23,6 +23,9 @@ const RecordingPanel = () => {
   const [amplitudes, setAmplitudes] = useState<number[]>([]);
   const [outputFile, setOutputFile] = useState<string | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const currentPlayingFile = useSelector(
+    (state: any) => state.audio.currentlyPlayingFile,
+  );
 
   const dispatch = useDispatch();
 
@@ -92,6 +95,11 @@ const RecordingPanel = () => {
         'Microphone permission is required to start recording.',
       );
       return;
+    }
+
+    if (currentPlayingFile) {
+      await AudioModule.pausePlaying();
+      dispatch(setCurrentlyPlaying(null));
     }
 
     try {

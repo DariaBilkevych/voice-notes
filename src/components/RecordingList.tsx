@@ -10,7 +10,11 @@ import {
 import {useSelector, useDispatch} from 'react-redux';
 import {NativeModules} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {removeRecording, updateRecordingName} from '../store/audioSlice';
+import {
+  removeRecording,
+  updateRecordingName,
+  setCurrentlyPlaying,
+} from '../store/audioSlice';
 
 const {AudioModule} = NativeModules;
 
@@ -19,16 +23,18 @@ const RecordingList = () => {
   const recordings = useSelector((state: any) => state.audio.recordings);
   const [editingFile, setEditingFile] = useState<string | null>(null);
   const [newName, setNewName] = useState<string>('');
-  const [playingFile, setPlayingFile] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState<boolean>(false);
+  const playingFile = useSelector(
+    (state: any) => state.audio.currentlyPlayingFile,
+  );
 
   const startPlaying = async (filePath: string) => {
     if (playingFile !== filePath) {
-      setPlayingFile(filePath);
+      dispatch(setCurrentlyPlaying(filePath));
       setIsPaused(false);
       try {
         await AudioModule.startPlaying(filePath);
-        setPlayingFile(null);
+        dispatch(setCurrentlyPlaying(null));
         setIsPaused(false);
       } catch (error) {
         console.warn('Error starting playback:', error);
@@ -66,7 +72,7 @@ const RecordingList = () => {
           onPress: () => {
             if (playingFile === filePath) {
               pausePlaying();
-              setPlayingFile(null);
+              setCurrentlyPlaying(null);
             }
             dispatch(removeRecording(filePath));
           },
