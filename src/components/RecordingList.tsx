@@ -24,6 +24,7 @@ const RecordingList = () => {
   const recordings = useSelector((state: any) => state.audio.recordings);
   const [editingFile, setEditingFile] = useState<string | null>(null);
   const [newName, setNewName] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>(''); // Стан для пошуку
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const playingFile = useSelector(
     (state: any) => state.audio.currentlyPlayingFile,
@@ -84,25 +85,36 @@ const RecordingList = () => {
   };
 
   const saveNewName = (filePath: string) => {
-    if (newName.trim()) {
-      const errors = validateRecordingName(
-        newName,
-        recordings.map((r: any) => r.name),
-      );
+    const errors = validateRecordingName(
+      newName,
+      recordings.map((r: any) => r.name),
+    );
 
-      if (errors.length > 0) {
-        Alert.alert('Validation Error', errors.join('\n'));
-      } else {
-        dispatch(updateRecordingName({filePath, newName: newName.trim()}));
-        setEditingFile(null);
-        setNewName('');
-      }
+    if (errors.length > 0) {
+      Alert.alert('Validation Error', errors.join('\n'));
     } else {
-      Alert.alert('Invalid Name', 'Name cannot be empty.');
+      dispatch(updateRecordingName({filePath, newName: newName.trim()}));
+      setEditingFile(null);
+      setNewName('');
     }
   };
 
-  const reversedRecordings = [...recordings].reverse();
+  const filteredRecordings = recordings.filter((recording: any) => {
+    const searchTerms = searchQuery
+      .toLowerCase()
+      .split(' ')
+      .filter(term => term.length > 0);
+
+    return searchTerms.every(term =>
+      recording.name.toLowerCase().includes(term),
+    );
+  });
+
+  const clearSearch = () => {
+    setSearchQuery('');
+  };
+
+  const reversedRecordings = [...filteredRecordings].reverse();
 
   return (
     <View className="flex-1">
@@ -121,10 +133,17 @@ const RecordingList = () => {
           <TextInput
             className="flex-1 py-2 px-2"
             placeholder="Type to search ..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
           />
+          {searchQuery ? (
+            <TouchableOpacity onPress={clearSearch}>
+              <Ionicons name="close-circle" size={24} color="#6B7280" />
+            </TouchableOpacity>
+          ) : null}
         </View>
       </View>
-      <ScrollView className="flex-1 p-4 bg-gray-100">
+      <ScrollView className="flex-1 px-4">
         {reversedRecordings.length > 0 ? (
           reversedRecordings.map(
             (
