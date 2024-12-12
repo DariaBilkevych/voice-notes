@@ -13,11 +13,12 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import SaveRecordingModal from './modals/SaveRecordingModal';
 import {formatTime} from '../utils/timeUtils';
 import {AMPLITUDE_SCALE_FACTOR, MAX_AMPLITUDE} from '../utils/constants';
+import {setIsRecording} from '../store/audioSlice';
 
 const {AudioModule} = NativeModules;
 
 const RecordingPanel = () => {
-  const [isRecording, setIsRecording] = useState(false);
+  // const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [amplitudes, setAmplitudes] = useState<number[]>([]);
@@ -26,6 +27,7 @@ const RecordingPanel = () => {
   const currentPlayingFile = useSelector(
     (state: any) => state.audio.currentlyPlayingFile,
   );
+  const isRecording = useSelector((state: any) => state.audio.isRecording);
 
   const dispatch = useDispatch();
 
@@ -104,7 +106,8 @@ const RecordingPanel = () => {
 
     try {
       await AudioModule.startRecording(`recording_${Date.now()}`);
-      setIsRecording(true);
+      dispatch(setIsRecording(true));
+      // setIsRecording(true);
       setIsPaused(false);
       setRecordingTime(0);
       setAmplitudes([]);
@@ -118,7 +121,8 @@ const RecordingPanel = () => {
       await AudioModule.stopRecording();
       const outputFilePath = await AudioModule.getOutputFile();
       setOutputFile(outputFilePath);
-      setIsRecording(false);
+      dispatch(setIsRecording(false));
+      // setIsRecording(false);
       setIsPaused(false);
       setRecordingTime(0);
       setIsModalVisible(true);

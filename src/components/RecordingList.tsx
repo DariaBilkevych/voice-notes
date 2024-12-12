@@ -28,6 +28,7 @@ const RecordingList = () => {
   const playingFile = useSelector(
     (state: any) => state.audio.currentlyPlayingFile,
   );
+  const isRecording = useSelector((state: any) => state.audio.isRecording);
 
   const startPlaying = async (filePath: string) => {
     if (playingFile !== filePath) {
@@ -105,6 +106,9 @@ const RecordingList = () => {
 
   return (
     <View className="flex-1">
+      {isRecording && (
+        <View className="absolute top-0 left-0 right-0 bottom-0 bg-black/75 z-20" />
+      )}
       <View className="py-3 px-4 z-10">
         <Text className="text-2xl font-bold text-left">All Notes</Text>
         <View className="flex-row items-center rounded-lg shadow-lg mt-2 px-4 border-b border-gray-300">
@@ -158,7 +162,9 @@ const RecordingList = () => {
                 <View className="flex flex-row space-x-4">
                   {playingFile === recording.filePath ? (
                     isPaused ? (
-                      <TouchableOpacity onPress={resumePlaying}>
+                      <TouchableOpacity
+                        onPress={resumePlaying}
+                        disabled={isRecording}>
                         <Ionicons
                           name="play-circle"
                           size={32}
@@ -166,7 +172,9 @@ const RecordingList = () => {
                         />
                       </TouchableOpacity>
                     ) : (
-                      <TouchableOpacity onPress={pausePlaying}>
+                      <TouchableOpacity
+                        onPress={pausePlaying}
+                        disabled={isRecording}>
                         <Ionicons
                           name="pause-circle"
                           size={32}
@@ -176,7 +184,8 @@ const RecordingList = () => {
                     )
                   ) : (
                     <TouchableOpacity
-                      onPress={() => startPlaying(recording.filePath)}>
+                      onPress={() => startPlaying(recording.filePath)}
+                      disabled={isRecording}>
                       <Ionicons name="play-circle" size={32} color="#3b82f6" />
                     </TouchableOpacity>
                   )}
@@ -184,11 +193,13 @@ const RecordingList = () => {
                     onPress={() => {
                       setEditingFile(recording.filePath);
                       setNewName(recording.name);
-                    }}>
+                    }}
+                    disabled={isRecording}>
                     <Ionicons name="create-outline" size={28} color="#10b981" />
                   </TouchableOpacity>
                   <TouchableOpacity
-                    onPress={() => deleteRecording(recording.filePath)}>
+                    onPress={() => deleteRecording(recording.filePath)}
+                    disabled={isRecording}>
                     <Ionicons name="trash" size={28} color="#ef4444" />
                   </TouchableOpacity>
                 </View>
