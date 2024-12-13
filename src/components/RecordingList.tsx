@@ -17,6 +17,7 @@ import {
   setCurrentlyPlaying,
 } from '../store/audioSlice';
 import {validateEditingName} from '../validators/validateEditingName';
+import {formatTimeForSlider} from '../utils/timeUtils';
 
 const {AudioModule} = NativeModules;
 
@@ -25,7 +26,7 @@ const RecordingList = () => {
   const recordings = useSelector((state: any) => state.audio.recordings);
   const [editingFile, setEditingFile] = useState<string | null>(null);
   const [newName, setNewName] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState<string>(''); // Стан для пошуку
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [durations, setDurations] = useState<{[key: string]: number}>({});
   const [currentPositions, setCurrentPositions] = useState<{
@@ -54,7 +55,7 @@ const RecordingList = () => {
           .catch((error: any) =>
             console.warn('Error getting current position:', error),
           );
-      }, 1000);
+      }, 500);
     } else {
       clearInterval(intervalRef.current!);
     }
@@ -149,12 +150,6 @@ const RecordingList = () => {
     }
   };
 
-  const formatTime = (milliseconds: number) => {
-    const minutes = Math.floor(milliseconds / 60000);
-    const seconds = ((milliseconds % 60000) / 1000).toFixed(0);
-    return minutes + ':' + (parseInt(seconds) < 10 ? '0' : '') + seconds;
-  };
-
   const filteredRecordings = recordings.filter((recording: any) => {
     const searchTerms = searchQuery
       .toLowerCase()
@@ -208,37 +203,59 @@ const RecordingList = () => {
             ) => (
               <View
                 key={index}
-                className="flex flex-row items-center justify-between p-4 mb-2 bg-white rounded-md shadow-md">
-                <View>
-                  {editingFile === recording.filePath ? (
-                    <TextInput
-                      value={newName}
-                      onChangeText={setNewName}
-                      placeholder="Enter new name"
-                      className="w-48 h-12 mr-4 border-b border-gray-300"
-                      onSubmitEditing={() => saveNewName(recording.filePath)}
-                      autoFocus={true}
-                    />
-                  ) : (
-                    <Text className="text-gray-800 font-medium">
-                      {recording.name.length > 20
-                        ? recording.name.slice(0, 20) + '...'
-                        : recording.name}
+                className="p-4 mb-4 bg-white rounded-md shadow-md">
+                <View className="flex flex-row items-center justify-between">
+                  <View>
+                    {editingFile === recording.filePath ? (
+                      <TextInput
+                        value={newName}
+                        onChangeText={setNewName}
+                        placeholder="Enter new name"
+                        className="w-48 h-12 mr-4 border-b border-gray-300"
+                        onSubmitEditing={() => saveNewName(recording.filePath)}
+                        autoFocus={true}
+                      />
+                    ) : (
+                      <Text className="text-gray-800 font-medium">
+                        {recording.name.length > 20
+                          ? recording.name.slice(0, 20) + '...'
+                          : recording.name}
+                      </Text>
+                    )}
+                    <Text className="text-gray-400 text-xs mt-1">
+                      {new Intl.DateTimeFormat('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      }).format(new Date(recording.createdAt))}
                     </Text>
-                  )}
-                  <Text className="text-gray-400 text-xs mt-1">
-                    {new Intl.DateTimeFormat('en-GB', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                    }).format(new Date(recording.createdAt))}
-                  </Text>
-                </View>
-                <View className="flex flex-row space-x-4">
-                  {playingFile === recording.filePath ? (
-                    isPaused ? (
+                  </View>
+                  <View className="flex flex-row space-x-4">
+                    {playingFile === recording.filePath ? (
+                      isPaused ? (
+                        <TouchableOpacity
+                          onPress={resumePlaying}
+                          disabled={isRecording}>
+                          <Ionicons
+                            name="play-circle"
+                            size={32}
+                            color="#3b82f6"
+                          />
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity
+                          onPress={pausePlaying}
+                          disabled={isRecording}>
+                          <Ionicons
+                            name="pause-circle"
+                            size={32}
+                            color="#3b82f6"
+                          />
+                        </TouchableOpacity>
+                      )
+                    ) : (
                       <TouchableOpacity
-                        onPress={resumePlaying}
+                        onPress={() => startPlaying(recording.filePath)}
                         disabled={isRecording}>
                         <Ionicons
                           name="play-circle"
@@ -246,38 +263,53 @@ const RecordingList = () => {
                           color="#3b82f6"
                         />
                       </TouchableOpacity>
-                    ) : (
-                      <TouchableOpacity
-                        onPress={pausePlaying}
-                        disabled={isRecording}>
-                        <Ionicons
-                          name="pause-circle"
-                          size={32}
-                          color="#3b82f6"
-                        />
-                      </TouchableOpacity>
-                    )
-                  ) : (
+                    )}
                     <TouchableOpacity
-                      onPress={() => startPlaying(recording.filePath)}
+                      onPress={() => {
+                        setEditingFile(recording.filePath);
+                        setNewName(recording.name);
+                      }}
                       disabled={isRecording}>
-                      <Ionicons name="play-circle" size={32} color="#3b82f6" />
+                      <Ionicons
+                        name="create-outline"
+                        size={28}
+                        color="#10b981"
+                      />
                     </TouchableOpacity>
-                  )}
-                  <TouchableOpacity
-                    onPress={() => {
-                      setEditingFile(recording.filePath);
-                      setNewName(recording.name);
-                    }}
-                    disabled={isRecording}>
-                    <Ionicons name="create-outline" size={28} color="#10b981" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => deleteRecording(recording.filePath)}
-                    disabled={isRecording}>
-                    <Ionicons name="trash" size={28} color="#ef4444" />
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => deleteRecording(recording.filePath)}
+                      disabled={isRecording}>
+                      <Ionicons name="trash" size={28} color="#ef4444" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
+                {playingFile === recording.filePath && (
+                  <View className="mt-4">
+                    <Slider
+                      minimumTrackTintColor="#3b82f6"
+                      maximumTrackTintColor="#d1d5db"
+                      thumbTintColor="#3b82f6"
+                      minimumValue={0}
+                      maximumValue={durations[recording.filePath] || 0}
+                      value={currentPositions[recording.filePath] || 0}
+                      onSlidingComplete={value =>
+                        seekTo(recording.filePath, value)
+                      }
+                    />
+                    <View className="flex flex-row items-center justify-between">
+                      <Text className="text-gray-500 text-xs">
+                        {formatTimeForSlider(
+                          currentPositions[recording.filePath] || 0,
+                        )}
+                      </Text>
+                      <Text className="text-gray-500 text-xs">
+                        {formatTimeForSlider(
+                          durations[recording.filePath] || 0,
+                        )}
+                      </Text>
+                    </View>
+                  </View>
+                )}
               </View>
             ),
           )
