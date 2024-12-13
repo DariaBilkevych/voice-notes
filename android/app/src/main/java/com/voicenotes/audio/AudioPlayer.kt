@@ -110,7 +110,8 @@ class AudioPlayer(private val reactContext: ReactApplicationContext) :
         try {
             player?.let {
                 it.setOnSeekCompleteListener {
-                    promise.resolve("Seeked to position: $position")
+                    val newPosition = it.currentPosition
+                    promise.resolve("Seeked to position: $newPosition")
                 }
                 it.seekTo(position)
             } ?: promise.reject("PLAYER_NOT_INITIALIZED", "Player has not been initialized.")
