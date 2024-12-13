@@ -72,6 +72,17 @@ class AudioPlayer(private val reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
+    fun isPlaying(promise: Promise) {
+        try {
+            player?.let {
+                promise.resolve(it.isPlaying)
+            } ?: promise.reject("PLAYER_NOT_INITIALIZED", "Player has not been initialized.")
+        } catch (e: Exception) {
+            promise.reject("ERROR_CHECKING_PLAYBACK", "Failed to check playback status.", e)
+        }
+    }
+
+    @ReactMethod
     fun getDuration(promise: Promise) {
         try {
             player?.let {

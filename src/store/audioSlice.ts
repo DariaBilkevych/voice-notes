@@ -3,32 +3,38 @@ import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 interface Recording {
   filePath: string;
   name: string;
+  createdAt: string;
 }
 
 interface AudioState {
   recordings: Recording[];
+  currentlyPlayingFile: string | null;
+  isRecording: boolean;
 }
 
 const initialState: AudioState = {
   recordings: [],
+  currentlyPlayingFile: null,
+  isRecording: false,
 };
 
 const audioSlice = createSlice({
   name: 'audio',
   initialState,
   reducers: {
-    addRecording: (state, action: PayloadAction<string>) => {
-      let nextRecordingNumber = 1;
-      const existingNames = state.recordings.map(recording => recording.name);
-      while (existingNames.includes(`New Recording ${nextRecordingNumber}`)) {
-        nextRecordingNumber++;
-      }
-
+    addRecording: (
+      state,
+      action: PayloadAction<{
+        filePath: string;
+        name: string;
+        createdAt: string;
+      }>,
+    ) => {
       const newRecording = {
-        filePath: action.payload,
-        name: `New Recording ${nextRecordingNumber}`,
+        filePath: action.payload.filePath,
+        name: action.payload.name,
+        createdAt: action.payload.createdAt,
       };
-
       state.recordings.push(newRecording);
     },
 
@@ -49,9 +55,22 @@ const audioSlice = createSlice({
         recording.name = action.payload.newName;
       }
     },
+
+    setCurrentlyPlaying: (state, action: PayloadAction<string | null>) => {
+      state.currentlyPlayingFile = action.payload;
+    },
+
+    setIsRecording: (state, action: PayloadAction<boolean>) => {
+      state.isRecording = action.payload;
+    },
   },
 });
 
-export const {addRecording, removeRecording, updateRecordingName} =
-  audioSlice.actions;
+export const {
+  addRecording,
+  removeRecording,
+  updateRecordingName,
+  setCurrentlyPlaying,
+  setIsRecording,
+} = audioSlice.actions;
 export default audioSlice.reducer;
