@@ -174,7 +174,7 @@ const RecordingList = () => {
       )}
       <View className="py-3 px-4 z-10">
         <Text className="text-2xl font-bold text-left">All Notes</Text>
-        <View className="flex-row items-center rounded-lg shadow-lg mt-2 px-4 border-b border-gray-300">
+        <View className="flex-row items-center rounded-lg mt-2 border-b border-gray-300">
           <Ionicons
             name="search"
             size={20}
