@@ -194,7 +194,7 @@ const RecordingList = () => {
           ) : null}
         </View>
       </View>
-      <ScrollView className="flex-1 px-4">
+      <ScrollView className="flex-1 px-4" keyboardShouldPersistTaps="handled">
         {reversedRecordings.length > 0 ? (
           reversedRecordings.map(
             (
@@ -266,14 +266,26 @@ const RecordingList = () => {
                     )}
                     <TouchableOpacity
                       onPress={() => {
-                        setEditingFile(recording.filePath);
-                        setNewName(recording.name);
+                        if (editingFile === recording.filePath) {
+                          saveNewName(recording.filePath);
+                        } else {
+                          setEditingFile(recording.filePath);
+                          setNewName(recording.name);
+                        }
                       }}
                       disabled={isRecording}>
                       <Ionicons
-                        name="create-outline"
+                        name={
+                          editingFile === recording.filePath
+                            ? 'checkmark-circle'
+                            : 'create-outline'
+                        }
                         size={28}
-                        color="#10b981"
+                        color={
+                          editingFile === recording.filePath
+                            ? '#10b981'
+                            : '#10b981'
+                        }
                       />
                     </TouchableOpacity>
                     <TouchableOpacity
