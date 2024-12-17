@@ -11,7 +11,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {addRecording, setCurrentlyPlaying} from '../store/audioSlice';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import SaveRecordingModal from './modals/SaveRecordingModal';
-import {formatTime} from '../utils/timeUtils';
+import {formatTimeForTimer} from '../utils/timeUtils';
 import {AMPLITUDE_SCALE_FACTOR, MAX_AMPLITUDE} from '../utils/constants';
 import {setIsRecording} from '../store/audioSlice';
 
@@ -164,7 +164,7 @@ const RecordingPanel = () => {
     <View className="w-full p-5 bg-white border-t border-gray-300 flex items-center">
       <View className="flex-row items-center justify-between w-full">
         <Text className="text-lg font-semibold text-gray-800">
-          {isRecording ? formatTime(recordingTime) : '0:00'}
+          {isRecording ? formatTimeForTimer(recordingTime) : '0:00'}
         </Text>
 
         <TouchableOpacity

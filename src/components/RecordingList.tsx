@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   Alert,
   TouchableOpacity,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   TextInput,
 } from 'react-native';
+import Slider from '@react-native-community/slider';
 import {useSelector, useDispatch} from 'react-redux';
 import {NativeModules} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -16,6 +17,7 @@ import {
   setCurrentlyPlaying,
 } from '../store/audioSlice';
 import {validateEditingName} from '../validators/validateEditingName';
+import {formatTimeForSlider} from '../utils/timeUtils';
 
 const {AudioModule} = NativeModules;
 
@@ -24,17 +26,48 @@ const RecordingList = () => {
   const recordings = useSelector((state: any) => state.audio.recordings);
   const [editingFile, setEditingFile] = useState<string | null>(null);
   const [newName, setNewName] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState<string>(''); // Стан для пошуку
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [durations, setDurations] = useState<{[key: string]: number}>({});
+  const [currentPositions, setCurrentPositions] = useState<{
+    [key: string]: number;
+  }>({});
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
   const playingFile = useSelector(
     (state: any) => state.audio.currentlyPlayingFile,
   );
   const isRecording = useSelector((state: any) => state.audio.isRecording);
 
+  useEffect(() => {
+    if (playingFile) {
+      AudioModule.getDuration()
+        .then((duration: number) =>
+          setDurations(prev => ({...prev, [playingFile]: duration})),
+        )
+        .catch((error: any) => console.warn('Error getting duration:', error));
+
+      intervalRef.current = setInterval(() => {
+        AudioModule.getCurrentPosition()
+          .then((position: number) =>
+            setCurrentPositions(prev => ({...prev, [playingFile]: position})),
+          )
+          .catch((error: any) =>
+            console.warn('Error getting current position:', error),
+          );
+      }, 500);
+    } else {
+      clearInterval(intervalRef.current!);
+    }
+
+    return () => clearInterval(intervalRef.current!);
+  }, [playingFile]);
+
   const startPlaying = async (filePath: string) => {
     if (playingFile !== filePath) {
       dispatch(setCurrentlyPlaying(filePath));
       setIsPaused(false);
+      setCurrentPositions(prev => ({...prev, [filePath]: 0}));
       try {
         await AudioModule.startPlaying(filePath);
         dispatch(setCurrentlyPlaying(null));
@@ -60,6 +93,15 @@ const RecordingList = () => {
       setIsPaused(false);
     } catch (error) {
       console.warn('Error resuming playback:', error);
+    }
+  };
+
+  const seekTo = async (filePath: string, value: number) => {
+    try {
+      await AudioModule.seekTo(value);
+      setCurrentPositions(prev => ({...prev, [filePath]: value}));
+    } catch (error) {
+      console.warn('Error seeking:', error);
     }
   };
 
@@ -132,7 +174,7 @@ const RecordingList = () => {
       )}
       <View className="py-3 px-4 z-10">
         <Text className="text-2xl font-bold text-left">All Notes</Text>
-        <View className="flex-row items-center rounded-lg shadow-lg mt-2 px-4 border-b border-gray-300">
+        <View className="flex-row items-center rounded-lg mt-2 border-b border-gray-300">
           <Ionicons
             name="search"
             size={20}
@@ -152,7 +194,7 @@ const RecordingList = () => {
           ) : null}
         </View>
       </View>
-      <ScrollView className="flex-1 px-4">
+      <ScrollView className="flex-1 px-4" keyboardShouldPersistTaps="handled">
         {reversedRecordings.length > 0 ? (
           reversedRecordings.map(
             (
@@ -161,37 +203,59 @@ const RecordingList = () => {
             ) => (
               <View
                 key={index}
-                className="flex flex-row items-center justify-between p-4 mb-2 bg-white rounded-md shadow-md">
-                <View>
-                  {editingFile === recording.filePath ? (
-                    <TextInput
-                      value={newName}
-                      onChangeText={setNewName}
-                      placeholder="Enter new name"
-                      className="w-48 h-12 mr-4 border-b border-gray-300"
-                      onSubmitEditing={() => saveNewName(recording.filePath)}
-                      autoFocus={true}
-                    />
-                  ) : (
-                    <Text className="text-gray-800 font-medium">
-                      {recording.name.length > 20
-                        ? recording.name.slice(0, 20) + '...'
-                        : recording.name}
+                className="p-4 mb-4 bg-white rounded-md shadow-md">
+                <View className="flex flex-row items-center justify-between">
+                  <View>
+                    {editingFile === recording.filePath ? (
+                      <TextInput
+                        value={newName}
+                        onChangeText={setNewName}
+                        placeholder="Enter new name"
+                        className="w-48 h-12 mr-4 border-b border-gray-300"
+                        onSubmitEditing={() => saveNewName(recording.filePath)}
+                        autoFocus={true}
+                      />
+                    ) : (
+                      <Text className="text-gray-800 font-medium">
+                        {recording.name.length > 20
+                          ? recording.name.slice(0, 20) + '...'
+                          : recording.name}
+                      </Text>
+                    )}
+                    <Text className="text-gray-400 text-xs mt-1">
+                      {new Intl.DateTimeFormat('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      }).format(new Date(recording.createdAt))}
                     </Text>
-                  )}
-                  <Text className="text-gray-400 text-xs mt-1">
-                    {new Intl.DateTimeFormat('en-GB', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                    }).format(new Date(recording.createdAt))}
-                  </Text>
-                </View>
-                <View className="flex flex-row space-x-4">
-                  {playingFile === recording.filePath ? (
-                    isPaused ? (
+                  </View>
+                  <View className="flex flex-row space-x-4">
+                    {playingFile === recording.filePath ? (
+                      isPaused ? (
+                        <TouchableOpacity
+                          onPress={resumePlaying}
+                          disabled={isRecording}>
+                          <Ionicons
+                            name="play-circle"
+                            size={32}
+                            color="#3b82f6"
+                          />
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity
+                          onPress={pausePlaying}
+                          disabled={isRecording}>
+                          <Ionicons
+                            name="pause-circle"
+                            size={32}
+                            color="#3b82f6"
+                          />
+                        </TouchableOpacity>
+                      )
+                    ) : (
                       <TouchableOpacity
-                        onPress={resumePlaying}
+                        onPress={() => startPlaying(recording.filePath)}
                         disabled={isRecording}>
                         <Ionicons
                           name="play-circle"
@@ -199,38 +263,65 @@ const RecordingList = () => {
                           color="#3b82f6"
                         />
                       </TouchableOpacity>
-                    ) : (
-                      <TouchableOpacity
-                        onPress={pausePlaying}
-                        disabled={isRecording}>
-                        <Ionicons
-                          name="pause-circle"
-                          size={32}
-                          color="#3b82f6"
-                        />
-                      </TouchableOpacity>
-                    )
-                  ) : (
+                    )}
                     <TouchableOpacity
-                      onPress={() => startPlaying(recording.filePath)}
+                      onPress={() => {
+                        if (editingFile === recording.filePath) {
+                          saveNewName(recording.filePath);
+                        } else {
+                          setEditingFile(recording.filePath);
+                          setNewName(recording.name);
+                        }
+                      }}
                       disabled={isRecording}>
-                      <Ionicons name="play-circle" size={32} color="#3b82f6" />
+                      <Ionicons
+                        name={
+                          editingFile === recording.filePath
+                            ? 'checkmark-circle'
+                            : 'create-outline'
+                        }
+                        size={28}
+                        color={
+                          editingFile === recording.filePath
+                            ? '#10b981'
+                            : '#10b981'
+                        }
+                      />
                     </TouchableOpacity>
-                  )}
-                  <TouchableOpacity
-                    onPress={() => {
-                      setEditingFile(recording.filePath);
-                      setNewName(recording.name);
-                    }}
-                    disabled={isRecording}>
-                    <Ionicons name="create-outline" size={28} color="#10b981" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => deleteRecording(recording.filePath)}
-                    disabled={isRecording}>
-                    <Ionicons name="trash" size={28} color="#ef4444" />
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => deleteRecording(recording.filePath)}
+                      disabled={isRecording}>
+                      <Ionicons name="trash" size={28} color="#ef4444" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
+                {playingFile === recording.filePath && (
+                  <View className="mt-4">
+                    <Slider
+                      minimumTrackTintColor="#3b82f6"
+                      maximumTrackTintColor="#d1d5db"
+                      thumbTintColor="#3b82f6"
+                      minimumValue={0}
+                      maximumValue={durations[recording.filePath] || 0}
+                      value={currentPositions[recording.filePath] || 0}
+                      onSlidingComplete={value =>
+                        seekTo(recording.filePath, value)
+                      }
+                    />
+                    <View className="flex flex-row items-center justify-between">
+                      <Text className="text-gray-500 text-xs">
+                        {formatTimeForSlider(
+                          currentPositions[recording.filePath] || 0,
+                        )}
+                      </Text>
+                      <Text className="text-gray-500 text-xs">
+                        {formatTimeForSlider(
+                          durations[recording.filePath] || 0,
+                        )}
+                      </Text>
+                    </View>
+                  </View>
+                )}
               </View>
             ),
           )

@@ -62,7 +62,6 @@ class AudioPlayer(private val reactContext: ReactApplicationContext) :
     fun resumePlaying(promise: Promise) {
         try {
             player?.let {
-                it.seekTo(currentPosition)
                 it.start()
                 promise.resolve("Playback resumed")
             } ?: promise.reject("PLAYER_NOT_INITIALIZED", "Player has not been initialized.")
@@ -110,8 +109,11 @@ class AudioPlayer(private val reactContext: ReactApplicationContext) :
     fun seekTo(position: Int, promise: Promise) {
         try {
             player?.let {
+                it.setOnSeekCompleteListener {
+                    val newPosition = it.currentPosition
+                    promise.resolve("Seeked to position: $newPosition")
+                }
                 it.seekTo(position)
-                promise.resolve("Seeked to position: $position")
             } ?: promise.reject("PLAYER_NOT_INITIALIZED", "Player has not been initialized.")
         } catch (e: Exception) {
             promise.reject("ERROR_SEEKING", "Failed to seek audio.", e)
