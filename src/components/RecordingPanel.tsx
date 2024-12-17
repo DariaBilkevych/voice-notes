@@ -99,8 +99,11 @@ const RecordingPanel = () => {
     }
 
     if (currentPlayingFile) {
-      await AudioModule.pausePlaying();
-      dispatch(setCurrentlyPlaying(null));
+      const isPlaying = await AudioModule.isPlaying();
+      if (isPlaying) {
+        await AudioModule.pausePlaying();
+        dispatch(setCurrentlyPlaying(null));
+      }
     }
 
     try {

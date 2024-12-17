@@ -117,7 +117,7 @@ const RecordingList = () => {
           onPress: () => {
             if (playingFile === filePath) {
               pausePlaying();
-              setCurrentlyPlaying(null);
+              dispatch(setCurrentlyPlaying(null));
             }
             dispatch(removeRecording(filePath));
           },
